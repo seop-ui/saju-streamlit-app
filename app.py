@@ -337,7 +337,7 @@ def run_saju_engine(birth_date: date, birth_time: time, calendar_type: str, time
     return calculate_saju(**kwargs)
 
 
-def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
+def build_ai_prompt(result: Dict[str, Any]) -> str:
     basic = result.get("기본정보", {})
     lang = basic.get("언어", "ko")
     time_basis = basic.get("출생시간기준", "")
@@ -357,14 +357,11 @@ def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
 작성 규칙:
 - 과장하거나 단정적으로 예언하지 말 것
 - 미신적으로 몰아가지 말고 성향과 흐름 중심으로 설명할 것
-- 이름은 반드시 {name} 님 또는 {name} 로만 표기할 것
+- 사용자를 특정 이름으로 부르지 말 것
 - 전체 분량은 900~1400자 내외 또는 이에 준하는 영어 분량
 - 같은 내용을 반복하지 말 것
 - 읽기 쉽게 번호와 불릿을 적극 사용해 구조화할 것
-- 각 섹션 제목은 markdown heading level 2 형식으로 작성할 것. 예: ## 사주 해석
-- 첫 번째 섹션은 제목 없이 바로 핵심 요약 내용만 출력할 것
-- '요약 (Summary)' 같은 제목 텍스트는 출력하지 말 것
-- 섹션 제목은 본문보다 시각적으로 분명히 크고 눈에 띄게 작성할 것
+- 각 섹션은 제목 + 핵심 요약 + 불릿 포인트로 구성할 것
 - 한 문단은 2~3줄 이내로 끊어서 가독성을 높일 것
 - 강조가 필요한 키워드는 짧게 끊어 단독 줄로 표현할 것
 - 마지막 문장은 반드시 '{ending}' 로 끝낼 것
@@ -394,7 +391,7 @@ def get_api_key() -> Optional[str]:
     return os.getenv("OPENAI_API_KEY")
 
 
-def get_ai_interpretation(name: str, result: Dict[str, Any]) -> Optional[str]:
+def get_ai_interpretation(result: Dict[str, Any]) -> Optional[str]:
     api_key = get_api_key()
     if not api_key:
         return "OPENAI_API_KEY가 설정되지 않아 AI 해석을 생성할 수 없습니다."
@@ -405,9 +402,11 @@ def get_ai_interpretation(name: str, result: Dict[str, Any]) -> Optional[str]:
         client = OpenAI(api_key=api_key)
         response = client.responses.create(
             model="gpt-5.4-mini",
-            input=build_ai_prompt(name, result),
+            input=build_ai_prompt(result),
         )
         return response.output_text
+    except Exception as e:
+        return f"AI 해석 생성 중 오류가 발생했습니다: {e}"
     except Exception as e:
         return f"AI 해석 생성 중 오류가 발생했습니다: {e}"
 
@@ -512,7 +511,7 @@ if submitted:
                     "오행": element_summary,
                 }
 
-                ai_text = get_ai_interpretation(name.strip(), result)
+                ai_text = get_ai_interpretation(result)
 
                 st.session_state["saju_result"] = result
                 st.session_state["show_result"] = True
