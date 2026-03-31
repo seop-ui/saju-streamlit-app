@@ -335,27 +335,34 @@ def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
 아래 정보는 사용자의 원본 생년월일이 아니라 이미 계산된 사주 결과입니다.
 이 결과만 바탕으로 {('한국어' if lang == 'ko' else '영어')}로 자연스럽고 읽기 쉬운 사주풀이를 작성하세요.
 
+중요:
+- 출생시간 기준: {time_basis}
+- 이 기준을 반드시 고려하여 해석하세요
+- 미국 기준인 경우 → 현지 시간 기반 성향 흐름으로 해석
+- 한국 기준인 경우 → 한국 시간 기준 해석으로 간주
+
 작성 규칙:
 - 과장하거나 단정적으로 예언하지 말 것
 - 미신적으로 몰아가지 말고 성향과 흐름 중심으로 설명할 것
 - 이름은 반드시 {name} 님 또는 {name} 로만 표기할 것
 - 전체 분량은 900~1400자 내외 또는 이에 준하는 영어 분량
-- 투자, 의료, 법률, 건강 진단처럼 고위험 조언 금지
 - 같은 내용을 반복하지 말 것
-- 오행에서 설명한 내용과 성향에서 설명한 내용이 겹치면 하나로 정리할 것
-- 읽기 쉽게 소제목과 짧은 단락으로 구성할 것
+- 읽기 쉽게 **번호(1,2,3)**와 **불릿(•, -)**을 적극 사용해 구조화할 것
+- 각 섹션은 제목 + 핵심 요약 + 불릿 포인트로 구성할 것
+- 한 문단은 2~3줄 이내로 끊어서 가독성을 높일 것
+- 강조가 필요한 키워드는 **짧게 끊어 단독 줄**로 표현할 것
 - 마지막 문장은 반드시 '{ending}' 로 끝낼 것
 
 출력 구조:
-1. 사주 요약(Fortune Summary)
-2. 사주팔자 풀이(Four Pillars Interpretation)
-3. 오행 풀이(Five Elements Analysis)
-4. 나는 어떤 사람인가(What Kind of Person Am I?)
-5. 타고난 강점과 조심할 점(Innate Strengths & Points to Watch)
-6. 잘 맞는 환경과 일 스타일(Best-Fit Environment & Work Style)
-7. 대인관계와 감정 흐름(Relationships & Emotional Tendencies)
-8. 중요한 조언(Key Advice)
-9. 재물운, 애정운, 가족운, 건강운(Wealth, Love, Family & Health Luck)
+1. 요약 (Summary)
+2. 사주 해석 (Four Pillars)
+3. 오행 (Five Elements)
+4. 성향 (Personality)
+5. 강점/주의 (Strengths & Cautions)
+6. 환경/일 (Environment & Work Style)
+7. 관계/감정 (Relationships & Emotions)
+8. 조언 (Advice)
+9. 운세 (Fortune)
 
 계산 결과:
 {result}
@@ -449,36 +456,37 @@ if submitted:
         st.error(t("name_required"))
     else:
         try:
-            saju = run_saju_engine(birth_date, birth_time, calendar_type, time_basis)
-            elements = count_five_elements(saju)
-            element_summary = summarize_elements(elements)
-            result = {
-                "기본정보": {
-                    "이름": name.strip(),
-                    "생년월일": birth_date.isoformat(),
-                    "출생시간": birth_time.strftime("%H:%M"),
-                    "달력구분": calendar_type,
-                    "성별": gender,
-                    "출생시간기준": time_basis,
-                    "언어": st.session_state.get("lang", "ko"),
-                },
-                "사주팔자": {
-                    "연주": saju.get("year_pillar", ""),
-                    "월주": saju.get("month_pillar", ""),
-                    "일주": saju.get("day_pillar", ""),
-                    "시주": saju.get("hour_pillar", ""),
-                },
-                "천간지지": {
-                    "연간": saju.get("year_stem", ""),
-                    "연지": saju.get("year_branch", ""),
-                    "월간": saju.get("month_stem", ""),
-                    "월지": saju.get("month_branch", ""),
-                    "일간": saju.get("day_stem", ""),
-                    "일지": saju.get("day_branch", ""),
-                    "시간": saju.get("hour_stem", ""),
-                    "시지": saju.get("hour_branch", ""),
-                },
-                "오행": element_summary,
+            with st.spinner("🔮 사주 풀이 중..." if st.session_state.get("lang", "ko") == "ko" else "🔮 Reading your saju..."):
+                saju = run_saju_engine(birth_date, birth_time, calendar_type, time_basis)
+                elements = count_five_elements(saju)
+                element_summary = summarize_elements(elements)
+                result = {
+                    "기본정보": {
+                        "이름": name.strip(),
+                        "생년월일": birth_date.isoformat(),
+                        "출생시간": birth_time.strftime("%H:%M"),
+                        "달력구분": calendar_type,
+                        "성별": gender,
+                        "출생시간기준": time_basis,
+                        "언어": st.session_state.get("lang", "ko"),
+                    },
+                    "사주팔자": {
+                        "연주": saju.get("year_pillar", ""),
+                        "월주": saju.get("month_pillar", ""),
+                        "일주": saju.get("day_pillar", ""),
+                        "시주": saju.get("hour_pillar", ""),
+                    },
+                    "천간지지": {
+                        "연간": saju.get("year_stem", ""),
+                        "연지": saju.get("year_branch", ""),
+                        "월간": saju.get("month_stem", ""),
+                        "월지": saju.get("month_branch", ""),
+                        "일간": saju.get("day_stem", ""),
+                        "일지": saju.get("day_branch", ""),
+                        "시간": saju.get("hour_stem", ""),
+                        "시지": saju.get("hour_branch", ""),
+                    },
+                    "오행": element_summary,
             }
             st.session_state["saju_result"] = result
             st.session_state["show_result"] = True
