@@ -157,24 +157,26 @@ def run_saju_engine(
 
 def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
     return f"""
-당신은 사주 해석 보조 어시스턴트입니다.
+당신은 사주풀이 보조 어시스턴트입니다.
 아래 정보는 사용자의 원본 생년월일이 아니라 이미 계산된 사주 결과입니다.
-이 결과만 바탕으로 참고용 해석을 한국어로 작성하세요.
+이 결과만 바탕으로 한국어로 자연스럽고 읽기 쉽게 사주풀이를 작성하세요.
 
 작성 규칙:
 - 과장하거나 단정적으로 예언하지 말 것
-- 미신적으로 몰아가지 말고 성향 분석 중심으로 설명할 것
-- 아래 6개 섹션을 이 순서로 작성할 것
-1. 한줄 요약
-2. 성향
-3. 강점
-4. 주의할 점
-5. 인간관계/일 스타일
-6. 참고 포인트
-- 각 섹션은 2~4문장 이내
+- 미신적으로 몰아가지 말고 성향과 흐름 중심으로 설명할 것
 - 이름은 반드시 {name} 님으로만 표기
+- 각 항목은 소제목을 붙여 순서대로 작성할 것
+- 전체 분량은 700~1100자 내외
 - 투자, 의료, 법률, 건강 진단처럼 고위험 조언 금지
-- 마지막에 '참고용 해석입니다.' 문장으로 마무리
+- 마지막 문장은 반드시 '참고용으로 가볍게 봐주세요.'로 끝낼 것
+
+출력 구조:
+1. 사주를 한마디로 표현
+2. 사주팔자 풀이
+3. 오행 풀이
+4. 사용자가 어떤 사람인지
+5. 사주에서 풀리기 위해서 어떤 것이 좋은지
+6. 재물운, 애정운, 가족운, 건강운 간단 요약
 
 계산 결과:
 {result}
@@ -254,12 +256,8 @@ with st.form("saju_form", clear_on_submit=False):
         st.caption("30분 단위로 선택할 수 있어요")
         calendar_type = st.radio("달력 구분", ["양력", "음력"], horizontal=True)
 
-    bottom_col1, bottom_col2 = st.columns([1, 1])
-    with bottom_col1:
-        gender = st.radio("성별", ["여성", "남성", "기타/미선택"], horizontal=True)
-    with bottom_col2:
-        use_ai = st.checkbox("AI 해석 추가하기", value=False)
-        st.caption("원본 입력값이 아니라 계산된 결과 기준으로 해석")
+    gender = st.radio("성별", ["여성", "남성", "기타/미선택"], horizontal=True)
+    st.caption("사주 보기를 누르면 사주 계산과 사주풀이가 함께 진행됩니다")
 
     submitted = st.form_submit_button("사주 보기", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
@@ -288,31 +286,21 @@ if submitted:
                     "시주": saju.get("hour_pillar", ""),
                 },
                 "천간지지": {
-                    "year_stem": saju.get("year_stem", ""),
-                    "year_branch": saju.get("year_branch", ""),
-                    "month_stem": saju.get("month_stem", ""),
-                    "month_branch": saju.get("month_branch", ""),
-                    "day_stem": saju.get("day_stem", ""),
-                    "day_branch": saju.get("day_branch", ""),
-                    "hour_stem": saju.get("hour_stem", ""),
-                    "hour_branch": saju.get("hour_branch", ""),
+                    "연간": saju.get("year_stem", ""),
+                    "연지": saju.get("year_branch", ""),
+                    "월간": saju.get("month_stem", ""),
+                    "월지": saju.get("month_branch", ""),
+                    "일간": saju.get("day_stem", ""),
+                    "일지": saju.get("day_branch", ""),
+                    "시간": saju.get("hour_stem", ""),
+                    "시지": saju.get("hour_branch", ""),
                 },
                 "오행": element_summary,
-                "부가정보": {
-                    "birth_date": saju.get("birth_date", ""),
-                    "birth_time": saju.get("birth_time", ""),
-                    "zi_time_type": saju.get("zi_time_type", None),
-                    "solar_correction": saju.get("solar_correction", None),
-                },
             }
 
             st.session_state["saju_result"] = result
             st.session_state["show_result"] = True
-
-            if use_ai:
-                st.session_state["ai_interpretation"] = get_ai_interpretation(name.strip(), result)
-            else:
-                st.session_state["ai_interpretation"] = None
+            st.session_state["ai_interpretation"] = get_ai_interpretation(name.strip(), result)
 
         except Exception as e:
             st.error(f"사주 계산 중 오류가 발생했습니다: {e}")
@@ -331,7 +319,7 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
         col3.metric("일주", result["사주팔자"]["일주"])
         col4.metric("시주", result["사주팔자"]["시주"])
 
-    left, right = st.columns([1.1, 0.9])
+    left, right = st.columns([1.05, 0.95])
 
     with left:
         with st.container(border=True):
@@ -342,13 +330,13 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
             }
             st.bar_chart(chart_data, x="오행", y="개수")
             st.caption(
-                f"많은 오행: {', '.join(result['오행']['많은 오행'])}  ·  적은 오행: {', '.join(result['오행']['적은 오행'])}"
+                f"많은 오행: {', '.join(result['오행']['많은 오행'])} · 적은 오행: {', '.join(result['오행']['적은 오행'])}"
             )
 
         ai_text = st.session_state.get("ai_interpretation")
         if ai_text:
             with st.container(border=True):
-                st.markdown("### AI 해석")
+                st.markdown("### 사주풀이")
                 st.write(ai_text)
 
     with right:
@@ -362,10 +350,19 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
 
         with st.container(border=True):
             st.markdown("### 천간지지")
-            st.json(result["천간지지"])
-
-    with st.expander("상세 데이터 보기"):
-        st.json(result)
+            tg1, tg2 = st.columns(2)
+            with tg1:
+                st.markdown("**천간**")
+                st.markdown(f"- 연간: **{result['천간지지']['연간']}**")
+                st.markdown(f"- 월간: **{result['천간지지']['월간']}**")
+                st.markdown(f"- 일간: **{result['천간지지']['일간']}**")
+                st.markdown(f"- 시간: **{result['천간지지']['시간']}**")
+            with tg2:
+                st.markdown("**지지**")
+                st.markdown(f"- 연지: **{result['천간지지']['연지']}**")
+                st.markdown(f"- 월지: **{result['천간지지']['월지']}**")
+                st.markdown(f"- 일지: **{result['천간지지']['일지']}**")
+                st.markdown(f"- 시지: **{result['천간지지']['시지']}**")
 
     col1, col2 = st.columns(2)
     with col1:
