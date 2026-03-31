@@ -158,36 +158,54 @@ def run_saju_engine(
 def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
     return f"""
 당신은 사주 해석 보조 어시스턴트입니다.
-아래는 사용자의 원본 생년월일/출생시간이 아니라 이미 계산된 사주 결과입니다.
+아래 정보는 사용자의 원본 생년월일이 아니라 이미 계산된 사주 결과입니다.
 이 결과만 바탕으로 참고용 해석을 한국어로 작성하세요.
 
-규칙:
-- 단정적 예언처럼 말하지 말 것
-- 성격, 강점, 대인관계, 일/돈, 보완 포인트를 균형 있게 설명할 것
-- 과장된 확신 표현 금지
-- 민감하거나 고위험 조언 금지
-- 600자 이내
-- 소제목 5개로 나눌 것
-- 이름은 {name} 님으로만 표기
+작성 규칙:
+- 과장하거나 단정적으로 예언하지 말 것
+- 미신적으로 몰아가지 말고 성향 분석 중심으로 설명할 것
+- 아래 6개 섹션을 이 순서로 작성할 것
+1. 한줄 요약
+2. 성향
+3. 강점
+4. 주의할 점
+5. 인간관계/일 스타일
+6. 참고 포인트
+- 각 섹션은 2~4문장 이내
+- 이름은 반드시 {name} 님으로만 표기
+- 투자, 의료, 법률, 건강 진단처럼 고위험 조언 금지
+- 마지막에 '참고용 해석입니다.' 문장으로 마무리
 
 계산 결과:
 {result}
 """.strip()
 
 
+def get_api_key() -> Optional[str]:
+    try:
+        if "OPENAI_API_KEY" in st.secrets:
+            return st.secrets["OPENAI_API_KEY"]
+    except Exception:
+        pass
+    return os.getenv("OPENAI_API_KEY")
+
+
 def get_ai_interpretation(name: str, result: Dict[str, Any]) -> Optional[str]:
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = get_api_key()
     if not api_key:
-        return None
+        return "OPENAI_API_KEY가 설정되지 않아 AI 해석을 생성할 수 없습니다."
     if OpenAI is None:
         return "OpenAI SDK가 설치되지 않아 AI 해석을 생성하지 못했습니다."
 
-    client = OpenAI(api_key=api_key)
-    response = client.responses.create(
-        model="gpt-5.4-mini",
-        input=build_ai_prompt(name, result),
-    )
-    return response.output_text
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.responses.create(
+            model="gpt-5.4-mini",
+            input=build_ai_prompt(name, result),
+        )
+        return response.output_text
+    except Exception as e:
+        return f"AI 해석 생성 중 오류가 발생했습니다: {e}"
 
 
 st.markdown(
