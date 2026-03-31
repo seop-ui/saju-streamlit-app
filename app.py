@@ -15,7 +15,59 @@ except Exception:
     OpenAI = None
 
 
-st.set_page_config(page_title="사주 프로그램", page_icon="🔮", layout="centered")
+st.set_page_config(page_title="사주 프로그램", page_icon="🔮", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1100px;
+    }
+    .hero-card {
+        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        color: white;
+        padding: 28px;
+        border-radius: 22px;
+        margin-bottom: 18px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    }
+    .soft-card {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+    .pill-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+    .pill {
+        background: #eef2ff;
+        color: #3730a3;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid #c7d2fe;
+    }
+    .section-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    .subtle {
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 def reset_sensitive_state() -> None:
@@ -138,11 +190,23 @@ def get_ai_interpretation(name: str, result: Dict[str, Any]) -> Optional[str]:
     return response.output_text
 
 
-st.title("🔮 사주 프로그램")
-st.caption("입력값은 저장하지 않고 세션 내에서만 처리되도록 구성한 버전")
-
-st.info(
-    "이 앱은 이름, 생년월일, 출생시간을 계산용으로만 사용하며, DB/파일 저장 없이 세션 메모리에서만 처리합니다."
+st.markdown(
+    """
+    <div class="hero-card">
+        <div style="font-size:2rem; font-weight:800; margin-bottom:8px;">🔮 사주 프로그램</div>
+        <div style="font-size:1.02rem; opacity:0.92; line-height:1.6;">
+            이름, 생년월일, 태어난 시간을 바탕으로 사주팔자와 오행 분포를 확인할 수 있는 버전입니다.<br>
+            입력값은 저장하지 않고 세션 내에서만 처리되도록 구성했습니다.
+        </div>
+        <div class="pill-row">
+            <span class="pill">DB 저장 없음</span>
+            <span class="pill">파일 저장 없음</span>
+            <span class="pill">세션 기반 처리</span>
+            <span class="pill">AI 해석 선택 가능</span>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 with st.expander("중요 안내", expanded=False):
@@ -155,19 +219,32 @@ with st.expander("중요 안내", expanded=False):
         """
     )
 
+st.markdown('<div class="section-title">입력 정보</div>', unsafe_allow_html=True)
+st.markdown('<div class="soft-card">', unsafe_allow_html=True)
 with st.form("saju_form", clear_on_submit=False):
-    name = st.text_input("이름", placeholder="예: 홍길동")
-    birth_date = st.date_input(
-        "생년월일",
-        value=date(1995, 1, 1),
-        min_value=date(1900, 1, 1),
-        max_value=date.today(),
-    )
-    birth_time = st.time_input("태어난 시간", value=time(12, 0), step=60)
-    calendar_type = st.radio("달력 구분", ["양력", "음력"], horizontal=True)
-    gender = st.radio("성별", ["여성", "남성", "기타/미선택"], horizontal=True)
-    use_ai = st.checkbox("AI 해석 추가하기 (선택)", value=False)
-    submitted = st.form_submit_button("사주 보기")
+    top_col1, top_col2 = st.columns([1.2, 1])
+    with top_col1:
+        name = st.text_input("이름", placeholder="예: 홍길동")
+        birth_date = st.date_input(
+            "생년월일",
+            value=date(1995, 1, 1),
+            min_value=date(1900, 1, 1),
+            max_value=date.today(),
+        )
+    with top_col2:
+        birth_time = st.time_input("태어난 시간", value=time(12, 0), step=1800)
+        st.caption("30분 단위로 선택할 수 있어요")
+        calendar_type = st.radio("달력 구분", ["양력", "음력"], horizontal=True)
+
+    bottom_col1, bottom_col2 = st.columns([1, 1])
+    with bottom_col1:
+        gender = st.radio("성별", ["여성", "남성", "기타/미선택"], horizontal=True)
+    with bottom_col2:
+        use_ai = st.checkbox("AI 해석 추가하기", value=False)
+        st.caption("원본 입력값이 아니라 계산된 결과 기준으로 해석")
+
+    submitted = st.form_submit_button("사주 보기", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 if submitted:
     if not name.strip():
@@ -224,8 +301,9 @@ if submitted:
 
 if st.session_state.get("show_result") and st.session_state.get("saju_result"):
     result = st.session_state["saju_result"]
+    element_counts = result["오행"]["오행 분포"]
 
-    st.subheader("사주 결과")
+    st.markdown("<div class='section-title'>사주 결과</div>", unsafe_allow_html=True)
 
     with st.container(border=True):
         st.markdown("### 사주팔자")
@@ -235,19 +313,41 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
         col3.metric("일주", result["사주팔자"]["일주"])
         col4.metric("시주", result["사주팔자"]["시주"])
 
-    with st.container(border=True):
-        st.markdown("### 오행 분포")
-        st.json(result["오행"])
+    left, right = st.columns([1.1, 0.9])
 
-    with st.container(border=True):
-        st.markdown("### 상세 데이터")
-        st.json(result)
-
-    ai_text = st.session_state.get("ai_interpretation")
-    if ai_text:
+    with left:
         with st.container(border=True):
-            st.markdown("### AI 해석")
-            st.write(ai_text)
+            st.markdown("### 오행 분포")
+            chart_data = {
+                "오행": list(element_counts.keys()),
+                "개수": list(element_counts.values()),
+            }
+            st.bar_chart(chart_data, x="오행", y="개수")
+            st.caption(
+                f"많은 오행: {', '.join(result['오행']['많은 오행'])}  ·  적은 오행: {', '.join(result['오행']['적은 오행'])}"
+            )
+
+        ai_text = st.session_state.get("ai_interpretation")
+        if ai_text:
+            with st.container(border=True):
+                st.markdown("### AI 해석")
+                st.write(ai_text)
+
+    with right:
+        with st.container(border=True):
+            st.markdown("### 입력 정보")
+            st.write(f"**이름**: {result['기본정보']['이름']}")
+            st.write(f"**생년월일**: {result['기본정보']['생년월일']}")
+            st.write(f"**태어난 시간**: {result['기본정보']['출생시간']}")
+            st.write(f"**달력 구분**: {result['기본정보']['달력구분']}")
+            st.write(f"**성별**: {result['기본정보']['성별']}")
+
+        with st.container(border=True):
+            st.markdown("### 천간지지")
+            st.json(result["천간지지"])
+
+    with st.expander("상세 데이터 보기"):
+        st.json(result)
 
     col1, col2 = st.columns(2)
     with col1:
