@@ -4,6 +4,115 @@ from typing import Dict, Any, Optional
 
 import streamlit as st
 
+LANG = {
+    "ko": {
+        "app_title": "사주 프로그램",
+        "hero_desc": "이름, 생년월일, 태어난 시간을 바탕으로 사주팔자, 오행 분포, 사주풀이를 확인할 수 있습니다.",
+        "privacy_1": "DB 저장 없음",
+        "privacy_2": "파일 저장 없음",
+        "privacy_3": "세션 기반 처리",
+        "privacy_4": "사주풀이 자동 생성",
+        "important": "중요 안내",
+        "important_body": "입력값은 저장하지 않고 세션 내에서만 처리됩니다. 사주 보기를 누르면 계산과 사주풀이가 함께 진행됩니다.",
+        "lang_select": "언어 선택",
+        "lang_ko": "한국어",
+        "lang_en": "English",
+        "input_section": "입력 정보",
+        "name": "이름",
+        "birth_date": "생년월일",
+        "birth_time": "태어난 시간",
+        "time_basis": "출생 시간 기준",
+        "time_us": "미국 기준",
+        "time_kr": "한국 기준",
+        "time_help": "30분 단위로 선택할 수 있어요",
+        "calendar_type": "달력 구분",
+        "solar": "양력",
+        "lunar": "음력",
+        "gender": "성별",
+        "female": "여성",
+        "male": "남성",
+        "other": "기타/미선택",
+        "submit": "사주 보기",
+        "submit_help": "사주 계산과 사주풀이가 함께 진행됩니다",
+        "result_section": "사주 결과",
+        "pillars": "사주팔자",
+        "year": "연주",
+        "month": "월주",
+        "day": "일주",
+        "hour": "시주",
+        "elements": "오행 분포",
+        "input_info": "입력 정보",
+        "stems_branches": "천간지지",
+        "stems": "천간",
+        "branches": "지지",
+        "reset": "초기화",
+        "clear_result": "결과만 지우기",
+        "fortune_title": "사주풀이",
+        "title_edit_note": "상단 큰 제목은 코드 상단 LANG 딕셔너리의 app_title 값을 바꾸면 수정할 수 있어요.",
+        "many_elements": "많은 오행",
+        "few_elements": "적은 오행",
+        "timezone_note": "미국에서 사용할 경우 입력한 출생 시간을 미국 기준으로 볼지, 한국 기준으로 볼지 선택할 수 있습니다.",
+        "name_required": "이름을 입력해주세요.",
+        "error_prefix": "사주 계산 중 오류가 발생했습니다:",
+    },
+    "en": {
+        "app_title": "Saju Reading",
+        "hero_desc": "Enter a name, birth date, and birth time to view the Four Pillars, Five Elements, and a guided saju interpretation.",
+        "privacy_1": "No DB storage",
+        "privacy_2": "No file storage",
+        "privacy_3": "Session-only processing",
+        "privacy_4": "Auto interpretation",
+        "important": "Important Notice",
+        "important_body": "Inputs are processed only within the current session and are not stored. When you click View Reading, both calculation and interpretation run together.",
+        "lang_select": "Language",
+        "lang_ko": "한국어",
+        "lang_en": "English",
+        "input_section": "Input Information",
+        "name": "Name",
+        "birth_date": "Birth Date",
+        "birth_time": "Birth Time",
+        "time_basis": "Birth Time Basis",
+        "time_us": "US time",
+        "time_kr": "Korea time",
+        "time_help": "Choose in 30-minute intervals",
+        "calendar_type": "Calendar Type",
+        "solar": "Solar",
+        "lunar": "Lunar",
+        "gender": "Gender",
+        "female": "Female",
+        "male": "Male",
+        "other": "Other / Prefer not to say",
+        "submit": "View Reading",
+        "submit_help": "Calculation and interpretation will run together",
+        "result_section": "Reading Result",
+        "pillars": "Four Pillars",
+        "year": "Year",
+        "month": "Month",
+        "day": "Day",
+        "hour": "Hour",
+        "elements": "Five Elements",
+        "input_info": "Input Summary",
+        "stems_branches": "Heavenly Stems & Earthly Branches",
+        "stems": "Heavenly Stems",
+        "branches": "Earthly Branches",
+        "reset": "Reset",
+        "clear_result": "Clear Result",
+        "fortune_title": "Saju Interpretation",
+        "title_edit_note": "To change the large title at the top, edit the app_title value in the LANG dictionary near the top of the code.",
+        "many_elements": "Dominant elements",
+        "few_elements": "Weaker elements",
+        "timezone_note": "For US users, you can choose whether the entered birth time should be interpreted as US time or Korea time.",
+        "name_required": "Please enter a name.",
+        "error_prefix": "An error occurred while calculating the saju reading:",
+    },
+}
+
+
+def t(key: str) -> str:
+    lang = st.session_state.get("lang", "ko")
+    return LANG[lang].get(key, key)
+
+
 try:
     from sajupy import calculate_saju
 except Exception:
@@ -15,36 +124,36 @@ except Exception:
     OpenAI = None
 
 
-st.set_page_config(page_title="사주 프로그램", page_icon="🔮", layout="wide")
+st.set_page_config(page_title="Saju App", page_icon="🔮", layout="wide")
 
 st.markdown(
     """
     <style>
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.6rem;
         padding-bottom: 2rem;
-        max-width: 1100px;
+        max-width: 1150px;
     }
     .hero-card {
-        background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+        background: linear-gradient(135deg, #111827 0%, #1e293b 55%, #0f172a 100%);
         color: white;
-        padding: 28px;
-        border-radius: 22px;
+        padding: 30px;
+        border-radius: 24px;
         margin-bottom: 18px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        box-shadow: 0 18px 40px rgba(2,6,23,0.18);
     }
     .soft-card {
-        background: #f8fafc;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
         border: 1px solid #e5e7eb;
-        border-radius: 18px;
-        padding: 18px 20px;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+        border-radius: 20px;
+        padding: 22px 24px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
     }
     .pill-row {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
-        margin-top: 8px;
+        margin-top: 12px;
     }
     .pill {
         background: #eef2ff;
@@ -52,17 +161,35 @@ st.markdown(
         padding: 7px 12px;
         border-radius: 999px;
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 700;
         border: 1px solid #c7d2fe;
     }
     .section-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-bottom: 8px;
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        margin-top: 6px;
     }
-    .subtle {
-        color: #6b7280;
-        font-size: 0.92rem;
+    .stem-grid {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+    }
+    .stem-item {
+        background:#f8fafc;
+        border:1px solid #e5e7eb;
+        border-radius:14px;
+        padding:12px 14px;
+    }
+    .stem-label {
+        font-size:0.82rem;
+        color:#6b7280;
+        margin-bottom:4px;
+    }
+    .stem-value {
+        font-size:1.18rem;
+        font-weight:800;
+        color:#111827;
     }
     </style>
     """,
@@ -77,10 +204,10 @@ def reset_sensitive_state() -> None:
         "birth_time",
         "calendar_type",
         "gender",
-        "use_ai",
         "saju_result",
         "ai_interpretation",
         "show_result",
+        "time_basis",
     ]:
         if key in st.session_state:
             del st.session_state[key]
@@ -122,23 +249,13 @@ def summarize_elements(counts: Dict[str, int]) -> Dict[str, Any]:
     min_value = min(counts.values())
     strong = [k for k, v in counts.items() if v == max_value]
     weak = [k for k, v in counts.items() if v == min_value]
-    return {
-        "많은 오행": strong,
-        "적은 오행": weak,
-        "오행 분포": counts,
-    }
+    return {"많은 오행": strong, "적은 오행": weak, "오행 분포": counts}
 
 
-def run_saju_engine(
-    birth_date: date,
-    birth_time: time,
-    calendar_type: str,
-) -> Dict[str, Any]:
+def run_saju_engine(birth_date: date, birth_time: time, calendar_type: str, time_basis: str) -> Dict[str, Any]:
     if calculate_saju is None:
         raise RuntimeError("sajupy 라이브러리를 불러오지 못했습니다.")
 
-    # sajupy 문서 기준 기본 호출 형태
-    # 음력 입력은 is_lunar=True, 윤달은 MVP에서는 미지원
     kwargs = {
         "year": birth_date.year,
         "month": birth_date.month,
@@ -147,36 +264,41 @@ def run_saju_engine(
         "minute": birth_time.minute,
     }
 
-    if calendar_type == "음력":
+    if calendar_type in ["음력", "Lunar"]:
         kwargs["is_lunar"] = True
         kwargs["is_leap_month"] = False
 
-    saju = calculate_saju(**kwargs)
-    return saju
+    kwargs["country"] = "US" if time_basis in ["미국 기준", "US time"] else "KR"
+    return calculate_saju(**kwargs)
 
 
 def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
     return f"""
 당신은 사주풀이 보조 어시스턴트입니다.
 아래 정보는 사용자의 원본 생년월일이 아니라 이미 계산된 사주 결과입니다.
-이 결과만 바탕으로 한국어로 자연스럽고 읽기 쉽게 사주풀이를 작성하세요.
+이 결과만 바탕으로 한국어 또는 영어 UI 언어에 맞는 자연스럽고 읽기 쉬운 사주풀이를 작성하세요.
 
 작성 규칙:
 - 과장하거나 단정적으로 예언하지 말 것
 - 미신적으로 몰아가지 말고 성향과 흐름 중심으로 설명할 것
-- 이름은 반드시 {name} 님으로만 표기
-- 각 항목은 소제목을 붙여 순서대로 작성할 것
-- 전체 분량은 700~1100자 내외
+- 이름은 반드시 {name} 님 또는 {name} 로만 표기할 것
+- 전체 분량은 900~1400자 내외 또는 이에 준하는 영어 분량
 - 투자, 의료, 법률, 건강 진단처럼 고위험 조언 금지
-- 마지막 문장은 반드시 '참고용으로 가볍게 봐주세요.'로 끝낼 것
+- 같은 내용을 반복하지 말 것
+- 오행에서 설명한 내용과 성향에서 설명한 내용이 겹치면 하나로 정리할 것
+- 읽기 쉽게 소제목과 짧은 단락으로 구성할 것
+- 마지막 문장은 한국어면 '참고용으로 가볍게 봐주세요.' 영어면 'Please take this as a light reference.' 로 끝낼 것
 
 출력 구조:
 1. 사주를 한마디로 표현
 2. 사주팔자 풀이
 3. 오행 풀이
 4. 사용자가 어떤 사람인지
-5. 사주에서 풀리기 위해서 어떤 것이 좋은지
-6. 재물운, 애정운, 가족운, 건강운 간단 요약
+5. 타고난 강점과 조심할 점
+6. 잘 맞는 환경과 일 스타일
+7. 대인관계와 감정 흐름
+8. 사주에서 풀리기 위해서 어떤 것이 좋은지
+9. 재물운, 애정운, 가족운, 건강운 간단 요약
 
 계산 결과:
 {result}
@@ -210,67 +332,73 @@ def get_ai_interpretation(name: str, result: Dict[str, Any]) -> Optional[str]:
         return f"AI 해석 생성 중 오류가 발생했습니다: {e}"
 
 
-st.markdown(
-    """
-    <div class="hero-card">
-        <div style="font-size:2rem; font-weight:800; margin-bottom:8px;">🔮 사주 프로그램</div>
-        <div style="font-size:1.02rem; opacity:0.92; line-height:1.6;">
-            이름, 생년월일, 태어난 시간을 바탕으로 사주팔자와 오행 분포를 확인할 수 있는 버전입니다.<br>
-            입력값은 저장하지 않고 세션 내에서만 처리되도록 구성했습니다.
-        </div>
-        <div class="pill-row">
-            <span class="pill">DB 저장 없음</span>
-            <span class="pill">파일 저장 없음</span>
-            <span class="pill">세션 기반 처리</span>
-            <span class="pill">AI 해석 선택 가능</span>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "ko"
 
-with st.expander("중요 안내", expanded=False):
-    st.markdown(
-        """
-- 현재 버전은 `sajupy` 라이브러리를 이용한 실사용 MVP입니다.
-- 사주 계산 라이브러리의 결과를 그대로 표시합니다.
-- AI 해석은 선택 기능이며, 원본 개인정보 대신 계산 결과만 전송하도록 구성했습니다.
-- 앱을 새로고침하거나 초기화하면 입력값과 결과가 세션에서 제거됩니다.
-        """
+header_left, header_right = st.columns([0.8, 0.2])
+with header_right:
+    selected_lang = st.radio(
+        t("lang_select"),
+        ["ko", "en"],
+        index=0 if st.session_state.get("lang") == "ko" else 1,
+        format_func=lambda x: LANG[x]["lang_ko"] if x == "ko" else LANG[x]["lang_en"],
+        horizontal=True,
     )
+    st.session_state["lang"] = selected_lang
 
-st.markdown('<div class="section-title">입력 정보</div>', unsafe_allow_html=True)
+with header_left:
+    st.markdown(
+        f"""
+        <div class="hero-card">
+            <div style="font-size:2rem; font-weight:800; margin-bottom:8px;">🔮 {t('app_title')}</div>
+            <div style="font-size:1.02rem; opacity:0.92; line-height:1.6;">{t('hero_desc')}</div>
+            <div class="pill-row">
+                <span class="pill">{t('privacy_1')}</span>
+                <span class="pill">{t('privacy_2')}</span>
+                <span class="pill">{t('privacy_3')}</span>
+                <span class="pill">{t('privacy_4')}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.caption(t("title_edit_note"))
+
+with st.expander(t("important"), expanded=False):
+    st.write(t("important_body"))
+    st.caption(t("timezone_note"))
+
+st.markdown(f'<div class="section-title">{t("input_section")}</div>', unsafe_allow_html=True)
 st.markdown('<div class="soft-card">', unsafe_allow_html=True)
 with st.form("saju_form", clear_on_submit=False):
     top_col1, top_col2 = st.columns([1.2, 1])
     with top_col1:
-        name = st.text_input("이름", placeholder="예: 홍길동")
+        name = st.text_input(t("name"), placeholder="예: 홍길동" if st.session_state.get("lang") == "ko" else "e.g. Olivia Kim")
         birth_date = st.date_input(
-            "생년월일",
+            t("birth_date"),
             value=date(1995, 1, 1),
             min_value=date(1900, 1, 1),
             max_value=date.today(),
         )
     with top_col2:
-        birth_time = st.time_input("태어난 시간", value=time(12, 0), step=1800)
-        st.caption("30분 단위로 선택할 수 있어요")
-        calendar_type = st.radio("달력 구분", ["양력", "음력"], horizontal=True)
+        birth_time = st.time_input(t("birth_time"), value=time(12, 0), step=1800)
+        st.caption(t("time_help"))
+        time_basis = st.radio(t("time_basis"), [t("time_us"), t("time_kr")], horizontal=True)
+        calendar_type = st.radio(t("calendar_type"), [t("solar"), t("lunar")], horizontal=True)
 
-    gender = st.radio("성별", ["여성", "남성", "기타/미선택"], horizontal=True)
-    st.caption("사주 보기를 누르면 사주 계산과 사주풀이가 함께 진행됩니다")
-
-    submitted = st.form_submit_button("사주 보기", use_container_width=True)
+    gender = st.radio(t("gender"), [t("female"), t("male"), t("other")], horizontal=True)
+    st.caption(t("submit_help"))
+    submitted = st.form_submit_button(t("submit"), use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 if submitted:
     if not name.strip():
-        st.error("이름을 입력해주세요.")
+        st.error(t("name_required"))
     else:
         try:
-            saju = run_saju_engine(birth_date, birth_time, calendar_type)
+            saju = run_saju_engine(birth_date, birth_time, calendar_type, time_basis)
             elements = count_five_elements(saju)
             element_summary = summarize_elements(elements)
-
             result = {
                 "기본정보": {
                     "이름": name.strip(),
@@ -278,6 +406,8 @@ if submitted:
                     "출생시간": birth_time.strftime("%H:%M"),
                     "달력구분": calendar_type,
                     "성별": gender,
+                    "출생시간기준": time_basis,
+                    "언어": st.session_state.get("lang", "ko"),
                 },
                 "사주팔자": {
                     "연주": saju.get("year_pillar", ""),
@@ -297,80 +427,88 @@ if submitted:
                 },
                 "오행": element_summary,
             }
-
             st.session_state["saju_result"] = result
             st.session_state["show_result"] = True
             st.session_state["ai_interpretation"] = get_ai_interpretation(name.strip(), result)
-
         except Exception as e:
-            st.error(f"사주 계산 중 오류가 발생했습니다: {e}")
+            st.error(f"{t('error_prefix')} {e}")
 
 if st.session_state.get("show_result") and st.session_state.get("saju_result"):
     result = st.session_state["saju_result"]
     element_counts = result["오행"]["오행 분포"]
 
-    st.markdown("<div class='section-title'>사주 결과</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-title'>{t('result_section')}</div>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.markdown("### 사주팔자")
+        st.markdown(f"### {t('pillars')}")
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("연주", result["사주팔자"]["연주"])
-        col2.metric("월주", result["사주팔자"]["월주"])
-        col3.metric("일주", result["사주팔자"]["일주"])
-        col4.metric("시주", result["사주팔자"]["시주"])
+        col1.metric(t("year"), result["사주팔자"]["연주"])
+        col2.metric(t("month"), result["사주팔자"]["월주"])
+        col3.metric(t("day"), result["사주팔자"]["일주"])
+        col4.metric(t("hour"), result["사주팔자"]["시주"])
 
-    left, right = st.columns([1.05, 0.95])
+    left, right = st.columns([1.12, 0.88])
 
     with left:
         with st.container(border=True):
-            st.markdown("### 오행 분포")
-            chart_data = {
-                "오행": list(element_counts.keys()),
-                "개수": list(element_counts.values()),
-            }
+            st.markdown(f"### {t('elements')}")
+            chart_data = {"오행": list(element_counts.keys()), "개수": list(element_counts.values())}
             st.bar_chart(chart_data, x="오행", y="개수")
-            st.caption(
-                f"많은 오행: {', '.join(result['오행']['많은 오행'])} · 적은 오행: {', '.join(result['오행']['적은 오행'])}"
-            )
+            st.caption(f"{t('many_elements')}: {', '.join(result['오행']['많은 오행'])} · {t('few_elements')}: {', '.join(result['오행']['적은 오행'])}")
 
         ai_text = st.session_state.get("ai_interpretation")
         if ai_text:
             with st.container(border=True):
-                st.markdown("### 사주풀이")
+                st.markdown(f"### {t('fortune_title')}")
                 st.write(ai_text)
 
     with right:
         with st.container(border=True):
-            st.markdown("### 입력 정보")
-            st.write(f"**이름**: {result['기본정보']['이름']}")
-            st.write(f"**생년월일**: {result['기본정보']['생년월일']}")
-            st.write(f"**태어난 시간**: {result['기본정보']['출생시간']}")
-            st.write(f"**달력 구분**: {result['기본정보']['달력구분']}")
-            st.write(f"**성별**: {result['기본정보']['성별']}")
+            st.markdown(f"### {t('input_info')}")
+            st.write(f"**{t('name')}**: {result['기본정보']['이름']}")
+            st.write(f"**{t('birth_date')}**: {result['기본정보']['생년월일']}")
+            st.write(f"**{t('birth_time')}**: {result['기본정보']['출생시간']}")
+            st.write(f"**{t('calendar_type')}**: {result['기본정보']['달력구분']}")
+            st.write(f"**{t('gender')}**: {result['기본정보']['성별']}")
+            st.write(f"**{t('time_basis')}**: {result['기본정보']['출생시간기준']}")
 
         with st.container(border=True):
-            st.markdown("### 천간지지")
-            tg1, tg2 = st.columns(2)
-            with tg1:
-                st.markdown("**천간**")
-                st.markdown(f"- 연간: **{result['천간지지']['연간']}**")
-                st.markdown(f"- 월간: **{result['천간지지']['월간']}**")
-                st.markdown(f"- 일간: **{result['천간지지']['일간']}**")
-                st.markdown(f"- 시간: **{result['천간지지']['시간']}**")
-            with tg2:
-                st.markdown("**지지**")
-                st.markdown(f"- 연지: **{result['천간지지']['연지']}**")
-                st.markdown(f"- 월지: **{result['천간지지']['월지']}**")
-                st.markdown(f"- 일지: **{result['천간지지']['일지']}**")
-                st.markdown(f"- 시지: **{result['천간지지']['시지']}**")
+            st.markdown(f"### {t('stems_branches')}")
+            stem_left, stem_right = st.columns(2)
+            with stem_left:
+                st.markdown(f"**{t('stems')}**")
+                st.markdown(
+                    f"""
+                    <div class='stem-grid'>
+                        <div class='stem-item'><div class='stem-label'>{t('year')}</div><div class='stem-value'>{result['천간지지']['연간']}</div></div>
+                        <div class='stem-item'><div class='stem-label'>{t('month')}</div><div class='stem-value'>{result['천간지지']['월간']}</div></div>
+                        <div class='stem-item'><div class='stem-label'>{t('day')}</div><div class='stem-value'>{result['천간지지']['일간']}</div></div>
+                        <div class='stem-item'><div class='stem-label'>{t('hour')}</div><div class='stem-value'>{result['천간지지']['시간']}</div></div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with stem_right:
+                st.markdown(f"**{t('branches')}**")
+                st.markdown(
+                    f"""
+                    <div class='stem-grid'>
+                        <div class='stem-item'><div class='stem-label'>{t('year')}</div><div class='stem-value'>{result['천간지지']['연지']}</div></div>
+                        <div class='stem-item'><div class='stem-label'>{t('month')}</div><div class='stem-value'>{result['천간지지']['월지']}</div></div>
+                        <div class='stem-item'><div class='stem-label'>{t('day')}</div><div class='stem-value'>{result['천간지지']['일지']}</div></div>
+                        <div class='stem-item'><div class='stem-label'>{t('hour')}</div><div class='stem-value'>{result['천간지지']['시지']}</div></div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("초기화", type="primary", use_container_width=True):
+        if st.button(t("reset"), type="primary", use_container_width=True):
             reset_sensitive_state()
             st.rerun()
     with col2:
-        if st.button("결과만 지우기", use_container_width=True):
+        if st.button(t("clear_result"), use_container_width=True):
             for key in ["saju_result", "ai_interpretation", "show_result"]:
                 if key in st.session_state:
                     del st.session_state[key]
@@ -379,18 +517,17 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
 st.divider()
 st.markdown(
     """
-### requirements.txt에 추가할 내용
+### requirements.txt
 ```txt
 streamlit
 sajupy
 openai
 ```
 
-### 다음 개선 포인트
-- 윤달 입력 추가
-- 태양시 보정 on/off 옵션 추가
-- 오행 막대차트 UI 추가
-- 십성/대운까지 확장
-- 결과 PDF 저장 기능 추가
+### Next ideas
+- Add leap month input
+- Add a more polished card style for the result section
+- Tune interpretation tone by audience
+- Add PDF export later
     """
 )
