@@ -161,6 +161,7 @@ st.markdown(
         border: 1px solid var(--brand-line);
         border-radius: 22px;
         padding: 10px 10px 10px 10px;
+        margin-bottom: 18px;
         box-shadow: 0 10px 28px rgba(59,79,56,0.06);
         backdrop-filter: blur(6px);
     }
