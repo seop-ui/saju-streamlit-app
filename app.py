@@ -55,6 +55,7 @@ LANG = {
         "error_prefix": "사주 계산 중 오류가 발생했습니다:",
         "time_us_help": "미국에서 태어났다면 현지 출생 시간을 그대로 입력하세요.",
         "time_kr_help": "한국 기준으로 해석하려면 한국 기준 시간을 입력하세요.",
+        "loading": "🔮 사주 풀이 중...",
     },
     "en": {
         "app_title": "Saju Reading",
@@ -64,7 +65,7 @@ LANG = {
         "privacy_3": "Ten Thousand Year Calendar",
         "privacy_4": "Five Elements",
         "important": "Important Notice",
-        "important_body": "Your input data is not stored. When you click “View Reading,” both the calculation and analysis will be performed.",
+        "important_body": "Your input data is not stored. When you click View Reading, both the calculation and analysis will be performed.",
         "lang_select": "Language",
         "lang_ko": "한국어",
         "lang_en": "English",
@@ -106,6 +107,7 @@ LANG = {
         "error_prefix": "An error occurred while calculating the saju reading:",
         "time_us_help": "Use the local US birth time exactly as recorded.",
         "time_kr_help": "Choose Korea time only if you want the input interpreted on a Korea-time basis.",
+        "loading": "🔮 Reading your saju...",
     },
 }
 
@@ -113,6 +115,20 @@ LANG = {
 def t(key: str) -> str:
     lang = st.session_state.get("lang", "ko")
     return LANG[lang].get(key, key)
+
+
+def localize_element_label(label: str) -> str:
+    lang = st.session_state.get("lang", "ko")
+    if lang == "en":
+        mapping = {
+            "목": "Wood",
+            "화": "Fire",
+            "토": "Earth",
+            "금": "Metal",
+            "수": "Water",
+        }
+        return mapping.get(label, label)
+    return label
 
 
 try:
@@ -160,7 +176,7 @@ st.markdown(
         background: rgba(255,255,255,0.72);
         border: 1px solid var(--brand-line);
         border-radius: 22px;
-        padding: 4px 4px 4px 4px;
+        padding: 4px;
         margin-bottom: 10px;
         box-shadow: 0 10px 28px rgba(59,79,56,0.06);
         backdrop-filter: blur(6px);
@@ -215,10 +231,6 @@ st.markdown(
         border-radius: 20px;
         padding: 20px 22px;
         line-height: 1.82;
-    }
-    .mini-note {
-        color: var(--brand-muted);
-        font-size: 0.92rem;
     }
     div[data-testid="stMetric"] {
         background: rgba(255,255,255,0.78);
@@ -322,14 +334,15 @@ def run_saju_engine(birth_date: date, birth_time: time, calendar_type: str, time
         kwargs["is_lunar"] = True
         kwargs["is_leap_month"] = False
 
-    # sajupy 현재 호출 규격상 country 인자를 직접 받지 않을 수 있어
-    # 우선 UI에서 기준만 받고 계산 엔진에는 안전한 공통 인자만 넘긴다.
     return calculate_saju(**kwargs)
 
 
 def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
-    lang = result.get("기본정보", {}).get("언어", "ko")
+    basic = result.get("기본정보", {})
+    lang = basic.get("언어", "ko")
+    time_basis = basic.get("출생시간기준", "")
     ending = "참고용으로 가볍게 봐주세요." if lang == "ko" else "Please take this as a light reference."
+
     return f"""
 당신은 사주풀이 보조 어시스턴트입니다.
 아래 정보는 사용자의 원본 생년월일이 아니라 이미 계산된 사주 결과입니다.
@@ -347,10 +360,10 @@ def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
 - 이름은 반드시 {name} 님 또는 {name} 로만 표기할 것
 - 전체 분량은 900~1400자 내외 또는 이에 준하는 영어 분량
 - 같은 내용을 반복하지 말 것
-- 읽기 쉽게 **번호(1,2,3)**와 **불릿(•, -)**을 적극 사용해 구조화할 것
+- 읽기 쉽게 번호와 불릿을 적극 사용해 구조화할 것
 - 각 섹션은 제목 + 핵심 요약 + 불릿 포인트로 구성할 것
 - 한 문단은 2~3줄 이내로 끊어서 가독성을 높일 것
-- 강조가 필요한 키워드는 **짧게 끊어 단독 줄**로 표현할 것
+- 강조가 필요한 키워드는 짧게 끊어 단독 줄로 표현할 것
 - 마지막 문장은 반드시 '{ending}' 로 끝낼 것
 
 출력 구조:
@@ -435,9 +448,15 @@ st.markdown('<div class="soft-card">', unsafe_allow_html=True)
 with st.form("saju_form", clear_on_submit=False):
     top_col1, top_col2 = st.columns([1.15, 1])
     with top_col1:
-        name = st.text_input(t("name"), placeholder="예: 홍길동" if st.session_state.get("lang") == "ko" else "e.g. Olivia Kim")
+        name = st.text_input(
+            t("name"),
+            placeholder="예: 홍길동" if st.session_state.get("lang") == "ko" else "e.g. Olivia Kim",
+        )
         birth_date = st.date_input(
-            t("birth_date"), value=date(1995, 1, 1), min_value=date(1900, 1, 1), max_value=date.today(),
+            t("birth_date"),
+            value=date(1995, 1, 1),
+            min_value=date(1900, 1, 1),
+            max_value=date.today(),
         )
         gender = st.radio(t("gender"), [t("female"), t("male"), t("other")], horizontal=True)
     with top_col2:
@@ -456,10 +475,11 @@ if submitted:
         st.error(t("name_required"))
     else:
         try:
-            with st.spinner("🔮 사주 풀이 중..." if st.session_state.get("lang", "ko") == "ko" else "🔮 Reading your saju..."):
+            with st.spinner(t("loading")):
                 saju = run_saju_engine(birth_date, birth_time, calendar_type, time_basis)
                 elements = count_five_elements(saju)
                 element_summary = summarize_elements(elements)
+
                 result = {
                     "기본정보": {
                         "이름": name.strip(),
@@ -487,10 +507,13 @@ if submitted:
                         "시지": saju.get("hour_branch", ""),
                     },
                     "오행": element_summary,
-            }
-            st.session_state["saju_result"] = result
-            st.session_state["show_result"] = True
-            st.session_state["ai_interpretation"] = get_ai_interpretation(name.strip(), result)
+                }
+
+                ai_text = get_ai_interpretation(name.strip(), result)
+
+                st.session_state["saju_result"] = result
+                st.session_state["show_result"] = True
+                st.session_state["ai_interpretation"] = ai_text
         except Exception as e:
             st.error(f"{t('error_prefix')} {e}")
 
@@ -519,13 +542,13 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
             max_value = max(values) if values else 1
             for i, (label, value) in enumerate(zip(labels, values)):
                 with bar_cols[i]:
-                    st.metric(label, value)
+                    st.metric(localize_element_label(label), value)
                     percent = int((value / max_value) * 100) if max_value else 0
                     st.progress(percent / 100)
             st.markdown(
                 f"<div class='element-summary'>"
-                f"<span class='element-chip'>{t('many_elements')}: {', '.join(result['오행']['많은 오행'])}</span>"
-                f"<span class='element-chip'>{t('few_elements')}: {', '.join(result['오행']['적은 오행'])}</span>"
+                f"<span class='element-chip'>{t('many_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['많은 오행'])}</span>"
+                f"<span class='element-chip'>{t('few_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['적은 오행'])}</span>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
