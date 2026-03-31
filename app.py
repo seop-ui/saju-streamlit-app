@@ -361,21 +361,24 @@ def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
 - 전체 분량은 900~1400자 내외 또는 이에 준하는 영어 분량
 - 같은 내용을 반복하지 말 것
 - 읽기 쉽게 번호와 불릿을 적극 사용해 구조화할 것
-- 각 섹션은 제목 + 핵심 요약 + 불릿 포인트로 구성할 것
+- 각 섹션 제목은 markdown heading level 2 형식으로 작성할 것. 예: ## 사주 해석
+- 첫 번째 섹션은 제목 없이 바로 핵심 요약 내용만 출력할 것
+- '요약 (Summary)' 같은 제목 텍스트는 출력하지 말 것
+- 섹션 제목은 본문보다 시각적으로 분명히 크고 눈에 띄게 작성할 것
 - 한 문단은 2~3줄 이내로 끊어서 가독성을 높일 것
 - 강조가 필요한 키워드는 짧게 끊어 단독 줄로 표현할 것
 - 마지막 문장은 반드시 '{ending}' 로 끝낼 것
 
 출력 구조:
-1. 요약 (Summary)
-2. 사주 해석 (Four Pillars)
-3. 오행 (Five Elements)
-4. 성향 (Personality)
-5. 강점/주의 (Strengths & Cautions)
-6. 환경/일 (Environment & Work Style)
-7. 관계/감정 (Relationships & Emotions)
-8. 조언 (Advice)
-9. 운세 (Fortune)
+1. 제목 없이 핵심 요약
+2. ## 사주 해석
+3. ## 오행
+4. ## 성향
+5. ## 강점/주의
+6. ## 환경/일
+7. ## 관계/감정
+8. ## 조언
+9. ## 운세
 
 계산 결과:
 {result}
@@ -524,6 +527,18 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
     st.markdown(f"<div class='section-title'>{t('result_section')}</div>", unsafe_allow_html=True)
 
     with st.container(border=True):
+        st.markdown(f"### {t('input_info')}")
+        info_left, info_right = st.columns(2)
+        with info_left:
+            st.write(f"**{t('name')}**: {result['기본정보']['이름']}")
+            st.write(f"**{t('birth_date')}**: {result['기본정보']['생년월일']}")
+            st.write(f"**{t('birth_time')}**: {result['기본정보']['출생시간']}")
+        with info_right:
+            st.write(f"**{t('calendar_type')}**: {result['기본정보']['달력구분']}")
+            st.write(f"**{t('gender')}**: {result['기본정보']['성별']}")
+            st.write(f"**{t('time_basis')}**: {result['기본정보']['출생시간기준']}")
+
+    with st.container(border=True):
         st.markdown(f"### {t('pillars')}")
         col1, col2, col3, col4 = st.columns(4)
         col1.metric(t("year"), result["사주팔자"]["연주"])
@@ -531,73 +546,60 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
         col3.metric(t("day"), result["사주팔자"]["일주"])
         col4.metric(t("hour"), result["사주팔자"]["시주"])
 
-    left, right = st.columns([1.1, 0.9])
+    with st.container(border=True):
+        st.markdown(f"### {t('elements')}")
+        bar_cols = st.columns(5)
+        labels = list(element_counts.keys())
+        values = list(element_counts.values())
+        max_value = max(values) if values else 1
+        for i, (label, value) in enumerate(zip(labels, values)):
+            with bar_cols[i]:
+                st.metric(localize_element_label(label), value)
+                percent = int((value / max_value) * 100) if max_value else 0
+                st.progress(percent / 100)
+        st.markdown(
+            f"<div class='element-summary'>"
+            f"<span class='element-chip'>{t('many_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['많은 오행'])}</span>"
+            f"<span class='element-chip'>{t('few_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['적은 오행'])}</span>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
-    with left:
-        with st.container(border=True):
-            st.markdown(f"### {t('elements')}")
-            bar_cols = st.columns(5)
-            labels = list(element_counts.keys())
-            values = list(element_counts.values())
-            max_value = max(values) if values else 1
-            for i, (label, value) in enumerate(zip(labels, values)):
-                with bar_cols[i]:
-                    st.metric(localize_element_label(label), value)
-                    percent = int((value / max_value) * 100) if max_value else 0
-                    st.progress(percent / 100)
+    with st.container(border=True):
+        st.markdown(f"### {t('stems_branches')}")
+        stem_left, stem_right = st.columns(2)
+        with stem_left:
+            st.markdown(f"**{t('stems')}**")
             st.markdown(
-                f"<div class='element-summary'>"
-                f"<span class='element-chip'>{t('many_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['많은 오행'])}</span>"
-                f"<span class='element-chip'>{t('few_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['적은 오행'])}</span>"
-                f"</div>",
+                f"""
+                <div class='stem-grid'>
+                    <div class='stem-item'><div class='stem-label'>{t('year')}</div><div class='stem-value'>{result['천간지지']['연간']}</div></div>
+                    <div class='stem-item'><div class='stem-label'>{t('month')}</div><div class='stem-value'>{result['천간지지']['월간']}</div></div>
+                    <div class='stem-item'><div class='stem-label'>{t('day')}</div><div class='stem-value'>{result['천간지지']['일간']}</div></div>
+                    <div class='stem-item'><div class='stem-label'>{t('hour')}</div><div class='stem-value'>{result['천간지지']['시간']}</div></div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with stem_right:
+            st.markdown(f"**{t('branches')}**")
+            st.markdown(
+                f"""
+                <div class='stem-grid'>
+                    <div class='stem-item'><div class='stem-label'>{t('year')}</div><div class='stem-value'>{result['천간지지']['연지']}</div></div>
+                    <div class='stem-item'><div class='stem-label'>{t('month')}</div><div class='stem-value'>{result['천간지지']['월지']}</div></div>
+                    <div class='stem-item'><div class='stem-label'>{t('day')}</div><div class='stem-value'>{result['천간지지']['일지']}</div></div>
+                    <div class='stem-item'><div class='stem-label'>{t('hour')}</div><div class='stem-value'>{result['천간지지']['시지']}</div></div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
 
-        ai_text = st.session_state.get("ai_interpretation")
-        if ai_text:
-            with st.container(border=True):
-                st.markdown(f"### {t('fortune_title')}")
-                st.markdown(f"<div class='fortune-box'>{ai_text}</div>", unsafe_allow_html=True)
-
-    with right:
+    ai_text = st.session_state.get("ai_interpretation")
+    if ai_text:
         with st.container(border=True):
-            st.markdown(f"### {t('input_info')}")
-            st.write(f"**{t('name')}**: {result['기본정보']['이름']}")
-            st.write(f"**{t('birth_date')}**: {result['기본정보']['생년월일']}")
-            st.write(f"**{t('birth_time')}**: {result['기본정보']['출생시간']}")
-            st.write(f"**{t('calendar_type')}**: {result['기본정보']['달력구분']}")
-            st.write(f"**{t('gender')}**: {result['기본정보']['성별']}")
-            st.write(f"**{t('time_basis')}**: {result['기본정보']['출생시간기준']}")
-
-        with st.container(border=True):
-            st.markdown(f"### {t('stems_branches')}")
-            stem_left, stem_right = st.columns(2)
-            with stem_left:
-                st.markdown(f"**{t('stems')}**")
-                st.markdown(
-                    f"""
-                    <div class='stem-grid'>
-                        <div class='stem-item'><div class='stem-label'>{t('year')}</div><div class='stem-value'>{result['천간지지']['연간']}</div></div>
-                        <div class='stem-item'><div class='stem-label'>{t('month')}</div><div class='stem-value'>{result['천간지지']['월간']}</div></div>
-                        <div class='stem-item'><div class='stem-label'>{t('day')}</div><div class='stem-value'>{result['천간지지']['일간']}</div></div>
-                        <div class='stem-item'><div class='stem-label'>{t('hour')}</div><div class='stem-value'>{result['천간지지']['시간']}</div></div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            with stem_right:
-                st.markdown(f"**{t('branches')}**")
-                st.markdown(
-                    f"""
-                    <div class='stem-grid'>
-                        <div class='stem-item'><div class='stem-label'>{t('year')}</div><div class='stem-value'>{result['천간지지']['연지']}</div></div>
-                        <div class='stem-item'><div class='stem-label'>{t('month')}</div><div class='stem-value'>{result['천간지지']['월지']}</div></div>
-                        <div class='stem-item'><div class='stem-label'>{t('day')}</div><div class='stem-value'>{result['천간지지']['일지']}</div></div>
-                        <div class='stem-item'><div class='stem-label'>{t('hour')}</div><div class='stem-value'>{result['천간지지']['시지']}</div></div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+            st.markdown(f"### {t('fortune_title')}")
+            st.markdown(ai_text)
 
     col1, col2 = st.columns(2)
     with col1:
