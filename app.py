@@ -341,7 +341,7 @@ def build_ai_prompt(result: Dict[str, Any]) -> str:
     basic = result.get("기본정보", {})
     lang = basic.get("언어", "ko")
     time_basis = basic.get("출생시간기준", "")
-    ending = "참고용으로 가볍게 봐주세요." if lang == "ko" else "Please take this as a light reference."
+    
 
     return f"""
 당신은 사주풀이 보조 어시스턴트입니다.
@@ -364,7 +364,7 @@ def build_ai_prompt(result: Dict[str, Any]) -> str:
 - 각 섹션은 제목 + 핵심 요약 + 불릿 포인트로 구성할 것
 - 한 문단은 2~3줄 이내로 끊어서 가독성을 높일 것
 - 강조가 필요한 키워드는 짧게 끊어 단독 줄로 표현할 것
-- 마지막 문장은 반드시 '{ending}' 로 끝낼 것
+- 출생시간을 명시하지 말 것
 
 출력 구조:
 1. 제목 없이 핵심 요약
