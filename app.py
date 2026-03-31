@@ -8,12 +8,12 @@ LANG = {
     "ko": {
         "app_title": "사주 프로그램",
         "hero_desc": "이름, 생년월일, 태어난 시간을 바탕으로 사주팔자, 오행 분포, 사주풀이를 확인할 수 있습니다.",
-        "privacy_1": "DB 저장 없음",
-        "privacy_2": "파일 저장 없음",
-        "privacy_3": "세션 기반 처리",
-        "privacy_4": "사주풀이 자동 생성",
-        "important": "중요 안내",
-        "important_body": "입력값은 저장하지 않고 세션 내에서만 처리됩니다. 사주 보기를 누르면 계산과 사주풀이가 함께 진행됩니다.",
+        "privacy_1": "MeSO",
+        "privacy_2": "사주풀이",
+        "privacy_3": "만세력",
+        "privacy_4": "오행",
+        "important": "유의사항",
+        "important_body": "입력값은 저장하지 않습니다. 사주 보기를 누르면 계산과 사주풀이가 함께 진행됩니다.",
         "lang_select": "언어 선택",
         "lang_ko": "한국어",
         "lang_en": "English",
@@ -59,12 +59,12 @@ LANG = {
     "en": {
         "app_title": "Saju Reading",
         "hero_desc": "Enter a name, birth date, and birth time to view the Four Pillars, Five Elements, and a guided saju interpretation.",
-        "privacy_1": "No DB storage",
-        "privacy_2": "No file storage",
-        "privacy_3": "Session-only processing",
-        "privacy_4": "Auto interpretation",
+        "privacy_1": "MeSO",
+        "privacy_2": "Four Pillars Analysis",
+        "privacy_3": "Ten Thousand Year Calendar",
+        "privacy_4": "Five Elements",
         "important": "Important Notice",
-        "important_body": "Inputs are processed only within the current session and are not stored. When you click View Reading, both calculation and interpretation run together.",
+        "important_body": "Your input data is not stored. When you click “View Reading,” both the calculation and analysis will be performed.",
         "lang_select": "Language",
         "lang_ko": "한국어",
         "lang_en": "English",
@@ -161,7 +161,7 @@ st.markdown(
         border: 1px solid var(--brand-line);
         border-radius: 22px;
         padding: 4px 4px 4px 4px;
-        margin-bottom: 18px;
+        margin-bottom: 10px;
         box-shadow: 0 10px 28px rgba(59,79,56,0.06);
         backdrop-filter: blur(6px);
     }
