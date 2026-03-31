@@ -347,15 +347,15 @@ def build_ai_prompt(name: str, result: Dict[str, Any]) -> str:
 - 마지막 문장은 반드시 '{ending}' 로 끝낼 것
 
 출력 구조:
-1. 사주를 한마디로 표현
-2. 사주팔자 풀이
-3. 오행 풀이
-4. 사용자가 어떤 사람인지
-5. 타고난 강점과 조심할 점
-6. 잘 맞는 환경과 일 스타일
-7. 대인관계와 감정 흐름
-8. 사주에서 풀리기 위해서 어떤 것이 좋은지
-9. 재물운, 애정운, 가족운, 건강운 간단 요약
+1. 사주 요약(Fortune Summary)
+2. 사주팔자 풀이(Four Pillars Interpretation)
+3. 오행 풀이(Five Elements Analysis)
+4. 나는 어떤 사람인가(What Kind of Person Am I?)
+5. 타고난 강점과 조심할 점(Innate Strengths & Points to Watch)
+6. 잘 맞는 환경과 일 스타일(Best-Fit Environment & Work Style)
+7. 대인관계와 감정 흐름(Relationships & Emotional Tendencies)
+8. 중요한 조언(Key Advice)
+9. 재물운, 애정운, 가족운, 건강운(Wealth, Love, Family & Health Luck)
 
 계산 결과:
 {result}
