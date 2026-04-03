@@ -279,7 +279,7 @@ st.markdown(
 def reset_sensitive_state() -> None:
     for key in [
         "name", "birth_date", "birth_time", "calendar_type", "gender",
-        "saju_result", "ai_interpretation", "show_result", "time_basis",
+        "time_basis", "display_result", "ai_payload", "ai_interpretation", "show_result"
     ]:
         if key in st.session_state:
             del st.session_state[key]
@@ -287,10 +287,12 @@ def reset_sensitive_state() -> None:
 
 def element_of_char(char: str) -> str:
     stem_map = {
-        "甲": "목", "乙": "목", "丙": "화", "丁": "화", "戊": "토", "己": "토", "庚": "금", "辛": "금", "壬": "수", "癸": "수",
+        "甲": "목", "乙": "목", "丙": "화", "丁": "화", "戊": "토", "己": "토",
+        "庚": "금", "辛": "금", "壬": "수", "癸": "수",
     }
     branch_map = {
-        "子": "수", "丑": "토", "寅": "목", "卯": "목", "辰": "토", "巳": "화", "午": "화", "未": "토", "申": "금", "酉": "금", "戌": "토", "亥": "수",
+        "子": "수", "丑": "토", "寅": "목", "卯": "목", "辰": "토", "巳": "화",
+        "午": "화", "未": "토", "申": "금", "酉": "금", "戌": "토", "亥": "수",
     }
     return stem_map.get(char) or branch_map.get(char) or "기타"
 
@@ -337,15 +339,91 @@ def run_saju_engine(birth_date: date, birth_time: time, calendar_type: str, time
     return calculate_saju(**kwargs)
 
 
-def build_ai_prompt(result: Dict[str, Any]) -> str:
-    basic = result.get("기본정보", {})
-    lang = basic.get("언어", "ko")
-    time_basis = basic.get("출생시간기준", "")
-    
+def build_display_result(
+    name: str,
+    birth_date: date,
+    birth_time: time,
+    calendar_type: str,
+    gender: str,
+    time_basis: str,
+    lang: str,
+    saju: Dict[str, Any],
+    element_summary: Dict[str, Any],
+) -> Dict[str, Any]:
+    return {
+        "기본정보": {
+            "이름": name.strip(),
+            "생년월일": birth_date.isoformat(),
+            "출생시간": birth_time.strftime("%H:%M"),
+            "달력구분": calendar_type,
+            "성별": gender,
+            "출생시간기준": time_basis,
+            "언어": lang,
+        },
+        "사주팔자": {
+            "연주": saju.get("year_pillar", ""),
+            "월주": saju.get("month_pillar", ""),
+            "일주": saju.get("day_pillar", ""),
+            "시주": saju.get("hour_pillar", ""),
+        },
+        "천간지지": {
+            "연간": saju.get("year_stem", ""),
+            "연지": saju.get("year_branch", ""),
+            "월간": saju.get("month_stem", ""),
+            "월지": saju.get("month_branch", ""),
+            "일간": saju.get("day_stem", ""),
+            "일지": saju.get("day_branch", ""),
+            "시간": saju.get("hour_stem", ""),
+            "시지": saju.get("hour_branch", ""),
+        },
+        "오행": element_summary,
+    }
+
+
+def build_ai_payload(
+    time_basis: str,
+    lang: str,
+    saju: Dict[str, Any],
+    element_summary: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    OpenAI API로 보내는 데이터.
+    개인정보(이름/생년월일/출생시간/성별)는 제외하고
+    계산된 사주 결과만 포함.
+    """
+    return {
+        "해석기준": {
+            "출생시간기준": time_basis,
+            "언어": lang,
+        },
+        "사주팔자": {
+            "연주": saju.get("year_pillar", ""),
+            "월주": saju.get("month_pillar", ""),
+            "일주": saju.get("day_pillar", ""),
+            "시주": saju.get("hour_pillar", ""),
+        },
+        "천간지지": {
+            "연간": saju.get("year_stem", ""),
+            "연지": saju.get("year_branch", ""),
+            "월간": saju.get("month_stem", ""),
+            "월지": saju.get("month_branch", ""),
+            "일간": saju.get("day_stem", ""),
+            "일지": saju.get("day_branch", ""),
+            "시간": saju.get("hour_stem", ""),
+            "시지": saju.get("hour_branch", ""),
+        },
+        "오행": element_summary,
+    }
+
+
+def build_ai_prompt(ai_payload: Dict[str, Any]) -> str:
+    meta = ai_payload.get("해석기준", {})
+    lang = meta.get("언어", "ko")
+    time_basis = meta.get("출생시간기준", "")
 
     return f"""
 당신은 사주풀이 보조 어시스턴트입니다.
-아래 정보는 사용자의 원본 생년월일이 아니라 이미 계산된 사주 결과입니다.
+아래 정보는 사용자의 개인정보가 아니라 이미 계산된 사주 결과입니다.
 이 결과만 바탕으로 {('한국어' if lang == 'ko' else '영어')}로 자연스럽고 읽기 쉬운 사주풀이를 작성하세요.
 
 중요:
@@ -364,7 +442,7 @@ def build_ai_prompt(result: Dict[str, Any]) -> str:
 - 각 섹션은 제목 + 핵심 요약 + 불릿 포인트로 구성할 것
 - 한 문단은 2~3줄 이내로 끊어서 가독성을 높일 것
 - 강조가 필요한 키워드는 짧게 끊어 단독 줄로 표현할 것
-- 출생시간을 명시하지 말 것
+- 원본 생년월일, 원본 출생시간, 이름, 성별을 추정하거나 언급하지 말 것
 
 출력 구조:
 1. 제목 없이 핵심 요약
@@ -378,7 +456,7 @@ def build_ai_prompt(result: Dict[str, Any]) -> str:
 9. ## 운세
 
 계산 결과:
-{result}
+{ai_payload}
 """.strip()
 
 
@@ -391,7 +469,7 @@ def get_api_key() -> Optional[str]:
     return os.getenv("OPENAI_API_KEY")
 
 
-def get_ai_interpretation(result: Dict[str, Any]) -> Optional[str]:
+def get_ai_interpretation(ai_payload: Dict[str, Any]) -> Optional[str]:
     api_key = get_api_key()
     if not api_key:
         return "OPENAI_API_KEY가 설정되지 않아 AI 해석을 생성할 수 없습니다."
@@ -402,11 +480,9 @@ def get_ai_interpretation(result: Dict[str, Any]) -> Optional[str]:
         client = OpenAI(api_key=api_key)
         response = client.responses.create(
             model="gpt-5.4-mini",
-            input=build_ai_prompt(result),
+            input=build_ai_prompt(ai_payload),
         )
         return response.output_text
-    except Exception as e:
-        return f"AI 해석 생성 중 오류가 발생했습니다: {e}"
     except Exception as e:
         return f"AI 해석 생성 중 오류가 발생했습니다: {e}"
 
@@ -482,45 +558,37 @@ if submitted:
                 elements = count_five_elements(saju)
                 element_summary = summarize_elements(elements)
 
-                result = {
-                    "기본정보": {
-                        "이름": name.strip(),
-                        "생년월일": birth_date.isoformat(),
-                        "출생시간": birth_time.strftime("%H:%M"),
-                        "달력구분": calendar_type,
-                        "성별": gender,
-                        "출생시간기준": time_basis,
-                        "언어": st.session_state.get("lang", "ko"),
-                    },
-                    "사주팔자": {
-                        "연주": saju.get("year_pillar", ""),
-                        "월주": saju.get("month_pillar", ""),
-                        "일주": saju.get("day_pillar", ""),
-                        "시주": saju.get("hour_pillar", ""),
-                    },
-                    "천간지지": {
-                        "연간": saju.get("year_stem", ""),
-                        "연지": saju.get("year_branch", ""),
-                        "월간": saju.get("month_stem", ""),
-                        "월지": saju.get("month_branch", ""),
-                        "일간": saju.get("day_stem", ""),
-                        "일지": saju.get("day_branch", ""),
-                        "시간": saju.get("hour_stem", ""),
-                        "시지": saju.get("hour_branch", ""),
-                    },
-                    "오행": element_summary,
-                }
+                display_result = build_display_result(
+                    name=name,
+                    birth_date=birth_date,
+                    birth_time=birth_time,
+                    calendar_type=calendar_type,
+                    gender=gender,
+                    time_basis=time_basis,
+                    lang=st.session_state.get("lang", "ko"),
+                    saju=saju,
+                    element_summary=element_summary,
+                )
 
-                ai_text = get_ai_interpretation(result)
+                ai_payload = build_ai_payload(
+                    time_basis=time_basis,
+                    lang=st.session_state.get("lang", "ko"),
+                    saju=saju,
+                    element_summary=element_summary,
+                )
 
-                st.session_state["saju_result"] = result
-                st.session_state["show_result"] = True
+                ai_text = get_ai_interpretation(ai_payload)
+
+                st.session_state["display_result"] = display_result
+                st.session_state["ai_payload"] = ai_payload
                 st.session_state["ai_interpretation"] = ai_text
+                st.session_state["show_result"] = True
+
         except Exception as e:
             st.error(f"{t('error_prefix')} {e}")
 
-if st.session_state.get("show_result") and st.session_state.get("saju_result"):
-    result = st.session_state["saju_result"]
+if st.session_state.get("show_result") and st.session_state.get("display_result"):
+    result = st.session_state["display_result"]
     element_counts = result["오행"]["오행 분포"]
 
     st.markdown(f"<div class='section-title'>{t('result_section')}</div>", unsafe_allow_html=True)
@@ -556,6 +624,7 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
                 st.metric(localize_element_label(label), value)
                 percent = int((value / max_value) * 100) if max_value else 0
                 st.progress(percent / 100)
+
         st.markdown(
             f"<div class='element-summary'>"
             f"<span class='element-chip'>{t('many_elements')}: {', '.join(localize_element_label(x) for x in result['오행']['많은 오행'])}</span>"
@@ -607,7 +676,7 @@ if st.session_state.get("show_result") and st.session_state.get("saju_result"):
             st.rerun()
     with col2:
         if st.button(t("clear_result"), use_container_width=True):
-            for key in ["saju_result", "ai_interpretation", "show_result"]:
+            for key in ["display_result", "ai_payload", "ai_interpretation", "show_result"]:
                 if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
